@@ -151,8 +151,9 @@ func (m *Map[V]) DeleteAccept(
 func (m *Map[V]) Len() int {
 	var length atomic.Int32
 	var wg sync.WaitGroup
+
+	wg.Add(m.shards)
 	for i := 0; i < m.shards; i++ {
-		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
 			shardLen := int32(m.maps[i].Len())
