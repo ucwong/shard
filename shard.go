@@ -3,9 +3,11 @@ package shard
 import (
 	"runtime"
 	"sync"
+	"sync/atomic"
 
-	"github.com/cespare/xxhash"
+	//"github.com/cespare/xxhash"
 	"github.com/tidwall/hashmap"
+	"github.com/zeebo/xxh3"
 )
 
 // Map is a hashmap. Like map[string]any, but sharded and thread-safe.
@@ -129,7 +131,6 @@ func (m *Map[V]) DeleteAccept(
 				// reset updated data
 				m.maps[shard].Set(key, prev)
 			}
-			//prev, deleted = nil, false
 			deleted = false
 		}
 	}
@@ -138,42 +139,59 @@ func (m *Map[V]) DeleteAccept(
 }
 
 // Len returns the number of values in map.
-func (m *Map[V]) Len() (length int) {
+/*func (m *Map[V]) Len() (length int) {
 	for i := 0; i < m.shards; i++ {
 		m.mus[i].RLock()
 		length += m.maps[i].Len()
 		m.mus[i].RUnlock()
 	}
 	return
+}*/
+
+func (m *Map[V]) Len() int {
+	var length atomic.Int32
+	var wg sync.WaitGroup
+	for i := 0; i < m.shards; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			shardLen := int32(m.maps[i].Len())
+			length.Add(shardLen)
+		}(i)
+	}
+	wg.Wait()
+	return int(length.Load())
 }
 
-// Range iterates overall all key/values.
-// It's not safe to call or Set or Delete while ranging.
-func (m *Map[V]) Range(iter func(key string, value V) bool) {
+// Range calls the provided callback function for each key-value pair in the map until the
+// callback returns false or all pairs have been processed.
+func (m *Map[V]) Range(callback func(key string, value V) bool) {
 	var done bool
+
 	for i := 0; i < m.shards; i++ {
-		func() {
-			m.mus[i].RLock()
-			defer m.mus[i].RUnlock()
-			m.maps[i].Scan(func(key string, value V) bool {
-				if !iter(key, value) {
-					done = true
-					return false
-				}
-				return true
-			})
-		}()
+		m.mus[i].RLock()
+		defer m.mus[i].RUnlock()
+
 		if done {
 			break
 		}
+
+		m.maps[i].Scan(func(key string, value V) bool {
+			if !callback(key, value) {
+				done = true
+				return false
+			}
+
+			return true
+		})
 	}
 }
 
 func (m *Map[V]) choose(key string) int {
-	return int(xxhash.Sum64String(key) & uint64(m.shards-1))
+	return int(xxh3.HashString(key) & uint64(m.shards-1))
 }
 
-func (m *Map[V]) initDo() {
+/*func (m *Map[V]) initDo() {
 	m.once.Do(func() {
 		m.shards = 1
 		for m.shards < runtime.NumCPU()*16 {
@@ -185,5 +203,33 @@ func (m *Map[V]) initDo() {
 		for i := 0; i < len(m.maps); i++ {
 			m.maps[i] = hashmap.New[string, V](scap)
 		}
+	})
+}*/
+
+func (m *Map[V]) initDo() {
+	var once sync.Once
+	once.Do(func() {
+		numShards := runtime.NumCPU() * 16
+		m.shards = 1
+		for m.shards < numShards {
+			m.shards *= 2
+		}
+
+		scap := m.capcity / m.shards
+		m.mus = make([]sync.RWMutex, m.shards)
+		m.maps = make([]*hashmap.Map[string, V], m.shards)
+
+		var wg sync.WaitGroup
+		wg.Add(m.shards)
+
+		for i := 0; i < m.shards; i++ {
+			go func(i int) {
+				defer wg.Done()
+				m.maps[i] = hashmap.New[string, V](scap)
+				m.mus[i] = sync.RWMutex{}
+			}(i)
+		}
+
+		wg.Wait()
 	})
 }
