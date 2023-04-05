@@ -5,7 +5,7 @@
 make
 ```
 
-# Benchmark
+## Benchmark
 ```
 cd bench
 ```
