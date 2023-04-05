@@ -19,7 +19,13 @@ type Map[V any] struct {
 }
 
 // New returns a new hashmap with the specified capacity.
-func New[V any](capcity int) (m *Map[V]) {
+func New[V any]() (m *Map[V]) {
+	m = NewWithCapcity[V](0)
+	return
+}
+
+// New returns a new hashmap with the specified capacity.
+func NewWithCapcity[V any](capcity int) (m *Map[V]) {
 	m = &Map[V]{capcity: capcity}
 	m.initDo()
 	return

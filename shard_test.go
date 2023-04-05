@@ -64,14 +64,14 @@ func TestRandomData(t *testing.T) {
 	start := time.Now()
 	for time.Since(start) < time.Second*2 {
 		nums := random(N, true)
-		var m = New[int](0)
+		var m = New[int]()
 		switch rand.Int() % 5 {
 		default:
-			m = New[int](N / ((rand.Int() % 3) + 1))
+			m = NewWithCapcity[int](N / ((rand.Int() % 3) + 1))
 		case 1:
-			m = New[int](0) //new(Map[int])
+			m = New[int]() //new(Map[int])
 		case 2:
-			m = New[int](0)
+			m = New[int]()
 		}
 		v, ok := m.Get(k(999))
 		if ok {
@@ -184,7 +184,7 @@ func TestRandomData(t *testing.T) {
 
 func TestSetAccept(t *testing.T) {
 	t.Parallel()
-	var m = New[string](0)
+	var m = New[string]()
 	m.Set("hello", "world")
 	prev, replaced := m.SetAccept("hello", "planet", nil)
 	if !replaced {
@@ -249,7 +249,7 @@ func TestSetAccept(t *testing.T) {
 
 func TestDeleteAccept(t *testing.T) {
 	t.Parallel()
-	var m = New[string](0)
+	var m = New[string]()
 	m.Set("hello", "world")
 	prev, deleted := m.DeleteAccept("hello", nil)
 	if !deleted {
@@ -302,7 +302,7 @@ func TestDeleteAccept(t *testing.T) {
 
 func TestClear(t *testing.T) {
 	t.Parallel()
-	var m = New[int](0)
+	var m = New[int]()
 	for i := 0; i < 1000; i++ {
 		m.Set(fmt.Sprintf("%d", i), i)
 	}

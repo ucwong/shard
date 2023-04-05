@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ucwong/shard"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/tidwall/lotsa"
+	"github.com/ucwong/shard"
 )
 
 func randKey(rnd *rand.Rand, n int) string {
@@ -152,7 +152,7 @@ func m() {
 	println()
 
 	println("-- shardmap --")
-	var com = shard.New[int](1024)
+	var com = shard.New[int]()
 	print("set: ")
 	lotsa.Ops(N, runtime.NumCPU(), func(i, _ int) {
 		com.Set(keys[i], i)
