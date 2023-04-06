@@ -3,7 +3,7 @@ package shard
 import (
 	"runtime"
 	"sync"
-	"sync/atomic"
+	//"sync/atomic"
 
 	//"github.com/cespare/xxhash"
 	"github.com/tidwall/hashmap"
@@ -139,16 +139,16 @@ func (m *Map[V]) DeleteAccept(
 }
 
 // Len returns the number of values in map.
-/*func (m *Map[V]) Len() (length int) {
+func (m *Map[V]) Len() (length int) {
 	for i := 0; i < m.shards; i++ {
 		m.mus[i].RLock()
 		length += m.maps[i].Len()
 		m.mus[i].RUnlock()
 	}
 	return
-}*/
+}
 
-func (m *Map[V]) Len() int {
+/*func (m *Map[V]) Len() int {
 	var length atomic.Int32
 	var wg sync.WaitGroup
 
@@ -162,7 +162,7 @@ func (m *Map[V]) Len() int {
 	}
 	wg.Wait()
 	return int(length.Load())
-}
+}*/
 
 // Range calls the provided callback function for each key-value pair in the map until the
 // callback returns false or all pairs have been processed.
