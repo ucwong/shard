@@ -9,4 +9,7 @@ require (
 	github.com/zeebo/xxh3 v1.0.3-0.20230502181907-3808c706a06a
 )
 
-require github.com/klauspost/cpuid/v2 v2.0.9 // indirect
+require (
+	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+)
