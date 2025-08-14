@@ -167,24 +167,30 @@ func (m *Map[V]) Len() (length int) {
 // Range calls the provided callback function for each key-value pair in the map until the
 // callback returns false or all pairs have been processed.
 func (m *Map[V]) Range(callback func(key string, value V) bool) {
-	var done bool
-
+	// Loop through all shards sequentially
 	for i := 0; i < m.shards; i++ {
+		// Lock and defer unlock for the current shard within its own scope
 		m.mus[i].RLock()
-		defer m.mus[i].RUnlock()
 
-		if done {
-			break
-		}
-
+		// The callback function returns false to stop the iteration.
+		// If the inner Scan loop is terminated, we also need to stop the outer loop.
+		// Therefore, we use a simple check and an early exit.
+		// The `done` flag is no longer necessary.
+		keepIterating := true
 		m.maps[i].Scan(func(key string, value V) bool {
 			if !callback(key, value) {
-				done = true
+				keepIterating = false
 				return false
 			}
-
 			return true
 		})
+
+		m.mus[i].RUnlock()
+
+		// If the inner scan was terminated, we stop the outer loop.
+		if !keepIterating {
+			break
+		}
 	}
 }
 
